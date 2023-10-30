@@ -2,20 +2,22 @@
 
 import subprocess
 import csv
+import logging
+import argparse
 
+# Function to read a CSV file and return a list of dictionaries
 def read_csv_file(filename):
-    # Reads a CSV file and provides a list of dictionaries with each dictionary representing a row within the file
     with open(filename, "r") as csvfile:
         reader = csv.DictReader(csvfile)
         return list(reader)
 
+# Function to run Snort packet capture on a specified network interface
 def run_snort_capture(interface):
-    # Runs the Snort packet capture on the specified interface.
     command = ["snort", "-i", interface]
     return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+# Function to parse a Snort alert message and return a dictionary with alert information
 def parse_snort_alert(alert):
-    # Parses a Snort alert message and returns a dictionary containing the alert information
     parts = alert.strip().split(" ")
     return {
         "timestamp": parts[0],
@@ -26,8 +28,8 @@ def parse_snort_alert(alert):
         "message": " ".join(parts[6:])
     }
 
+# Function to apply rules in the ruleset to the alert data and return True if a rule is matched
 def apply_rules(alert, ruleset_rows):
-    # Applies the rules in the ruleset to the alert data and returns True if the alert matches a rule, otherwise returns False
     for rule in ruleset_rows:
         if (alert["source_ip"] == rule["source_ip"]
                 and alert["destination_ip"] == rule["destination_ip"]
@@ -36,21 +38,33 @@ def apply_rules(alert, ruleset_rows):
                 return True
     return False
 
-# Specify interface for capture and ruleset for packet analysis
-interface = "eth0"
-ruleset_filename = "ruleset.csv"
+# Main function that orchestrates the IDS functionality
+def main(interface, ruleset_filename):
+    # Configure logging to a file
+    logging.basicConfig(filename="ids.log", level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.info("Starting IDS with interface: %s", interface)
 
-ruleset_rows = read_csv_file(ruleset_filename)
+    # Read the ruleset from a CSV file
+    ruleset_rows = read_csv_file(ruleset_filename)
 
-# Run the Snort packet capture
-snort_proc = run_snort_capture(interface)
+    # Start Snort packet capture
+    snort_proc = run_snort_capture(interface)
 
-# Process Snort alerts
-for alert in snort_proc.stdout:
-    alert_data = parse_snort_alert(alert.decode())
-    if apply_rules(alert_data, ruleset_rows):
-        print("ALERT: Blocked packet detected!")
-        print(alert_data)
-    else:
-        print("Packet passed through without any issue!")
-        print(alert_data)
+    # Process Snort alerts as they come in
+    for alert in snort_proc.stdout:
+        alert_data = parse_snort_alert(alert.decode())
+        if apply_rules(alert_data, ruleset_rows):
+            logging.warning("ALERT: Blocked packet detected! %s", alert_data)
+        else:
+            logging.info("Packet passed through without any issue! %s", alert_data)
+
+# Entry point for the script
+if __name__ == "__main__":
+    # Parse command-line arguments using argparse
+    parser = argparse.ArgumentParser(description="Intrusion Detection System (IDS) Proof of Concept")
+    parser.add_argument("-i", "--interface", default="eth0", help="Network interface for packet capture")
+    parser.add_argument("-r", "--ruleset", default="ruleset.csv", help="CSV ruleset file")
+    args = parser.parse_args()
+
+    # Call the main function with the specified interface and ruleset file
+    main(args.interface, args.ruleset)
