@@ -1,3 +1,6 @@
+# This diagram was designed using PlantUML and will render a .png file on the PlantUML Web Server here: https://www.plantuml.com/plantuml/uml/SyfFKj2rKt3CoKnELR1Io4ZDoSa70000
+# This will render a simple workflow for a basic healthcare monitoring application. It will outline a rudimentary architecture that can be edited as necessary.
+# This diagram is from the perspective of the end user accessing the application from the cloud infrastructure. 
 
 @startuml
 actor         User as User
