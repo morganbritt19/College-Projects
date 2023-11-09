@@ -1,0 +1,99 @@
+# This diagram was designed using PlantUML and will render a .png file on the PlantUML Web Server here: https://www.plantuml.com/plantuml/uml/SyfFKj2rKt3CoKnELR1Io4ZDoSa70000
+# This will render a simple workflow for a basic healthcare monitoring application. It will outline a rudimentary architecture that can be edited as necessary.
+# This diagram is from the perspective of the end user accessing the application from the on premise infrastructure.
+
+@startuml
+actor         User as User
+boundary      "External Firewall" as ExternalFirewall #dda0dd
+participant   "Front End Application" as FrontEndApp #dda0dd
+database      "HTTP Server" as HTTPServer #dda0dd
+boundary      "Internal Firewall" as InternalFirewall #dda0dd
+database      "Authentication Server" as AuthServer #dda0dd
+database      "Primary Database" as PrimaryDB #dda0dd
+queue         "Load Balancer" as LoadBalancer1 #dda0dd
+database      "Secondary Database" as SecondaryDB #dda0dd
+queue         "Load Balancer" as LoadBalancer2 #dda0dd
+database      "Tertiary Database" as TertiaryDB #dda0dd
+
+title Healthcare Monitoring Application
+group#dda0dd On-Premise Full Intrastructure
+     group Public Facing Infrastructure
+          FrontEndApp <-> HTTPServer : App hosted on HTTP server
+          FrontEndApp <-> HTTPServer : Also hosts the doctor portal
+     end
+
+     group#dda0dd On Premise Datacenter
+         PrimaryDB <-> TertiaryDB: Database cluster with load balancing
+         PrimaryDB <-> TertiaryDB: On a separate internal VLAN
+         PrimaryDB <-> TertiaryDB: HIPAA compliant
+     end
+
+     group#Red DMZ
+         ExternalFirewall <-> InternalFirewall : DMZ for front end application
+     end
+end
+
+== User Authentication ==
+autonumber
+group#DodgerBlue Encrypted Tunnel
+ExternalFirewall <[#0000ff]-> TertiaryDB: Encrypted tunnel via SSL/TLS
+User -> FrontEndApp : Attempts to authenticate
+FrontEndApp -> AuthServer : Requests authentication
+
+     group#00fa9a Successful Authentication
+          AuthServer -[#008000]> AuthServer : Verifies user identity 
+          FrontEndApp <[#008000]- AuthServer : Permits authentication
+          User <[#008000]- FrontEndApp : User authenticates to application
+     end
+
+     group#Red Failed Authentication [User Account Disabled AFter 3 Failed Attempts]
+          AuthServer -[#ff0000]>x AuthServer : Fails to verify identity 
+          FrontEndApp <[#ff0000]- AuthServer : Denies authentication
+          User x<[#ff0000]- FrontEndApp : User is notified that they entered incorrect credentials
+     end
+end
+
+== User Submitting Data ==
+autonumber
+group#DodgerBlue Encrypted Tunnel
+     ExternalFirewall <[#0000ff]-> TertiaryDB: Encrypted tunnel via SSL/TLS
+     User <- FrontEndApp : Prompts user for input
+     User -> FrontEndApp : Enters query like requesting a prescription refill
+     FrontEndApp -> SecondaryDB: Stores request and accompanying health information in database
+     PrimaryDB -> SecondaryDB: Processes request
+     FrontEndApp <- SecondaryDB: Requests more information, like prescription number and medication name
+     User -> FrontEndApp : Enters necessary information
+     FrontEndApp -> SecondaryDB: Submits information on behalf of patient and processes it
+
+     group#00fa9a Confirmed Submission
+          FrontEndApp <[#008000]- SecondaryDB: Returns confirmation of\nsuccessful actions, such as booking an appointment or submitting a perscription refill
+          User <[#008000]- FrontEndApp : Confirms data input with patient
+     end
+
+     group#Red Failed Submission
+          FrontEndApp x<[#ff0000]- SecondaryDB: Returns notification of\nfailed actions with error message
+          User x<[#ff0000]- FrontEndApp : Displays error and requests input again
+     end
+end
+
+== User Requesting Data ==
+group#DodgerBlue Encrypted Tunnel 
+autonumber
+ExternalFirewall <[#0000ff]-> TertiaryDB: Encrypted tunnel via SSL/TLS
+User -> FrontEndApp : Request health information like medical records
+FrontEndApp -> SecondaryDB: Queries for requested information
+SecondaryDB-> SecondaryDB: Checks to see if\ninformation is present
+
+     group#00fa9a Information Found
+          FrontEndApp <[#008000]- SecondaryDB: Returns queried information
+          User <[#008000]- FrontEndApp : Returns requested information
+     end
+
+     group#Red Information Not Found
+          FrontEndApp x<[#ff0000]- SecondaryDB: Returns error indicating information is not found
+          User x<[#ff0000]- FrontEndApp : Error notification is displayed and requests resubmission
+     end
+end
+
+@enduml
+
