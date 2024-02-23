@@ -7,16 +7,6 @@
 - Realistically, this is a proof-of-concept that offers very little functionality
 */
 
-// Ballot Class that calls the BallotFrame class
-public class Ballot {
-
-    public static void main(String[] args) {
-        // Instantiate the BallotFrame
-        javax.swing.SwingUtilities.invokeLater(BallotFrame::new);
-    }
-}
-
-
 // BallotFrame Class
 import javax.swing.*;
 import java.awt.*;
