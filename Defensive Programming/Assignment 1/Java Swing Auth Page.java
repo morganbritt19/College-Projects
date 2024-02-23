@@ -3,20 +3,9 @@
 - There is no input validation for this program, which is why it is used for learning defensive programming.
 - This code can be used and augmented with other projects to create a working authentication page, but that will require further development. 
 - I used NetBeans to compile this program. 
-*/
-
-// The following is the public class used to run the the LoginFrame class
-public class Login {
-    public static void main(String[] args) {
-        // Instantiate the LoginFrame
-        javax.swing.SwingUtilities.invokeLater(LoginFrame::new);
-    }
-}
-
-/* 
-- The Login class and Login Frame class should be built in separate .java files. 
 - This is the program used by the Login class.
-*/
+*/'
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
