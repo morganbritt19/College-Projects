@@ -1,14 +1,16 @@
-/* This assignment requires us to develop a Java class called JEString that can store strings in encrypted form.
+/* 
+* This assignment requires us to develop a Java class called JEString that can store strings in encrypted form.
 * We were instructed to use some form of encryption (AES or simple XoR) to encrypt string data when stored and decrypt the data when accessed.
+* This was developed with the other classes in this assignment in Apache Netbeans IDE 20.
 */
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.*;
-import java.util.Base64;
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 
 public class JEString {
     private String encryptedString;
@@ -21,7 +23,9 @@ public class JEString {
     }
 
     public void setAndEncryptString(String value) throws Exception {
-        byte[] keyBytes = Files.readAllBytes(Paths.get(keyFilePath));
+    try (FileInputStream fis = new FileInputStream(keyFilePath)) {
+        byte[] keyBytes = new byte[fis.available()];
+        fis.read(keyBytes);
         SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 
         Cipher cipher = Cipher.getInstance("AES");
@@ -29,6 +33,7 @@ public class JEString {
         byte[] encryptedBytes = cipher.doFinal(value.getBytes());
         encryptedString = Base64.getEncoder().encodeToString(encryptedBytes);
     }
+}
 
     public String decryptString() throws Exception {
         byte[] keyBytes = Files.readAllBytes(Paths.get(keyFilePath));
@@ -41,33 +46,35 @@ public class JEString {
     }
 
     private void generateKeyIfNotExists() throws Exception {
-        File keyFile = new File(keyFilePath);
-        if (!keyFile.exists()) {
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            SecureRandom secureRandom = new SecureRandom();
-            keyGen.init(256, secureRandom); // Generate a 256-bit key
-            SecretKey secretKey = keyGen.generateKey();
+    File keyFile = new File(keyFilePath);
+    if (!keyFile.exists()) {
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(256);
+        SecretKey secretKey = keyGen.generateKey();
 
-            try (ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(keyFile))) {
-                outputStream.writeObject(secretKey.getEncoded());
-            }
+        byte[] keyBytes = secretKey.getEncoded();
+        try (ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(keyFile))) {
+            outputStream.writeObject(keyBytes);
         }
-    }
 
+        // Print out the key bytes
+        System.out.println("Generated key: " + Base64.getEncoder().encodeToString(keyBytes));
+    }
+}
+
+    public String getEncryptedString() {
+        return encryptedString;
+    }
 
     public static void main(String[] args) {
         try {
             // Test the JEString class
             String keyFilePath = "keyfile.key";
             JEString jeString = new JEString("Hello, World!", keyFilePath);
-            System.out.println("Encrypted String: " + jeString.encryptedString);
+            System.out.println("Encrypted String: " + jeString.getEncryptedString());
             System.out.println("Decrypted String: " + jeString.decryptString());
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    String getEncryptedString() {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 }
