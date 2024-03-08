@@ -1,4 +1,7 @@
-// Here is a JEStringTest file that isn't strictly necessary, but providing it in tandem with the other code seems to be best practice.
+/* 
+* Here is a JEStringTest file that isn't strictly necessary, but providing it in tandem with the other code seems to be best practice.
+* This was developed with the other classes in this assignment in Apache NetBeans IDE 20.
+*/
 
 public class JEStringTest {
     public static void main(String[] args) {
